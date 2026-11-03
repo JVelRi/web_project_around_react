@@ -1,6 +1,6 @@
-import logo from "../assets/logo.svg";
+import logo from "../../assets/logo.svg";
 
-function Header() {
+export default function Header() {
   return (
     <header className="header page__section">
       <img
@@ -9,7 +9,5 @@ function Header() {
         src={logo}
       />
     </header>
-    );
+  );
 }
-
-export default Header;

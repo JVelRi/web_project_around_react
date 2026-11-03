@@ -118,11 +118,11 @@
   display: flex;
 }
 
-.popup__content_type_confirm-delete {
+.popup__content_type_confirm {
   min-height: auto;
 }
 
-.popup__content_type_confirm-de .popup__button {
+.popup__content_type_confirm .popup__button {
   margin-top: 32px;
 }
 

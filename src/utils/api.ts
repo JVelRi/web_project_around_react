@@ -1,5 +1,5 @@
 import { API_URL, API_TOKEN } from "./constants";
-import type { UserData, CardData } from "./types";
+import type { UserData, CardData } from "../types/types";
 
 async function request<T>(
   endpoint: string,
@@ -47,14 +47,12 @@ export function addCard(name: string, link: string) {
   });
 }
 
-export function updateLike(cardId: string, isLiked: boolean) {
-  return request<CardData>(`/cards/${cardId}/likes`, {
-    method: isLiked ? "DELETE" : "PUT",
-  });
+export function deleteCard(cardId: string) {
+  return request<unknown>(`/cards/${cardId}`, { method: "DELETE" });
 }
 
-export function deleteCard(cardId: string) {
-  return request<CardData>(`/cards/${cardId}`, {
-    method: "DELETE",
+export function changeLikeStatus(cardId: string, isLiked: boolean) {
+  return request<CardData>(`/cards/${cardId}/likes`, {
+    method: isLiked ? "DELETE" : "PUT",
   });
 }

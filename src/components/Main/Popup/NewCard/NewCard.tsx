@@ -1,18 +1,21 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useState, useContext } from "react";
+import CurrentUserContext from "../../../../contexts/CurrentUserContext";
+import useFormValidation from "../../../../hooks/useFormValidation";
 
-type NewCardProps = {
-  onSubmit: (name: string, link: string) => void;
-};
+export default function NewCard() {
+  const { handleAddPlaceSubmit } = useContext(CurrentUserContext);
 
-export default function NewCard(props: NewCardProps) {
   const [name, setName] = useState("");
   const [link, setLink] = useState("");
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>): void {
+  const { errors, isValid, handleChange, validateForm } = useFormValidation();
+
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    props.onSubmit(name, link);
-  }
+    if (!validateForm(e.currentTarget)) return;
+
+    handleAddPlaceSubmit({ name, link });
+  };
 
   return (
     <form className="popup__form" noValidate onSubmit={handleSubmit}>
@@ -25,9 +28,18 @@ export default function NewCard(props: NewCardProps) {
         required
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => {
+          setName(e.target.value);
+          handleChange(e);
+        }}
       />
-      <span className="popup__input-error"></span>
+      <span
+        className={`popup__input-error ${
+          errors.name ? "popup__input-error_active" : ""
+        }`}
+      >
+        {errors.name}
+      </span>
       <input
         className="popup__input popup__input_type_url"
         name="link"
@@ -35,10 +47,23 @@ export default function NewCard(props: NewCardProps) {
         required
         type="url"
         value={link}
-        onChange={(e) => setLink(e.target.value)}
+        onChange={(e) => {
+          setLink(e.target.value);
+          handleChange(e);
+        }}
       />
-      <span className="popup__input-error"></span>
-      <button className="button popup__button" type="submit">
+      <span
+        className={`popup__input-error ${
+          errors.link ? "popup__input-error_active" : ""
+        }`}
+      >
+        {errors.link}
+      </span>
+      <button
+        className="button popup__button"
+        type="submit"
+        disabled={!isValid}
+      >
         Crear
       </button>
     </form>

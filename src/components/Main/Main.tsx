@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useContext } from "react";
+import CurrentUserContext from "../../contexts/CurrentUserContext";
 import Card from "./Card/Card";
 import Popup from "./Popup/Popup";
 import NewCard from "./Popup/NewCard/NewCard";
@@ -6,112 +7,34 @@ import EditProfile from "./Popup/EditProfile/EditProfile";
 import EditAvatar from "./Popup/EditAvatar/EditAvatar";
 import ImagePopup from "./Popup/ImagePopup/ImagePopup";
 import RemoveCard from "./Popup/RemoveCard/RemoveCard";
-import type { CardData, PopupConfig, UserData } from "../../types/types";
-import {
-  addCard,
-  changeLikeStatus,
-  deleteCard,
-  getCardInfo,
-  getUserInfo,
-  updateUserAvatar,
-  updateUserInfo,
-} from "../../utils/api";
+import type { CardData, PopupConfig } from "../../types/types";
 
-export default function Main() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [cards, setCards] = useState<CardData[]>([]);
-  const [popup, setPopup] = useState<PopupConfig | null>(null);
+type MainProps = {
+  cards: CardData[];
+  handleOpenPopup: (config: PopupConfig) => void;
+  handleCardDelete: (card: CardData) => void;
+  handleCardLike: (card: CardData) => void;
+  handleClosePopup: () => void;
+  popup: PopupConfig | null;
+};
 
-  useEffect(() => {
-    getUserInfo()
-      .then((data) => setUser(data))
-      .catch(console.error);
-
-    getCardInfo()
-      .then((data) => setCards(data))
-      .catch(console.error);
-  }, []);
-
-  function handleOpenPopup(config: PopupConfig): void {
-    setPopup(config);
-  }
-
-  function handleClosePopup(): void {
-    setPopup(null);
-  }
-
-  function handleUpdateUser(name: string, about: string): void {
-    updateUserInfo(name, about)
-      .then((updatedUser) => {
-        setUser(updatedUser);
-        handleClosePopup();
-      })
-      .catch(console.error);
-  }
-
-  function handleUpdateAvatar(avatar: string): void {
-    updateUserAvatar(avatar)
-      .then((updatedUser) => {
-        setUser(updatedUser);
-        handleClosePopup();
-      })
-      .catch(console.error);
-  }
-
-  function handleAddCard(name: string, link: string): void {
-    addCard(name, link)
-      .then((newCard) => {
-        setCards((currentCards) => [newCard, ...currentCards]);
-        handleClosePopup();
-      })
-      .catch(console.error);
-  }
-
-  function handleDeleteCard(card: CardData): void {
-    deleteCard(card._id)
-      .then(() => {
-        setCards((currentCards) =>
-          currentCards.filter((c) => c._id !== card._id),
-        );
-        handleClosePopup();
-      })
-      .catch(console.error);
-  }
-
-  function handleCardLike(card: CardData): void {
-    changeLikeStatus(card._id, card.isLiked)
-      .then((updatedCard) => {
-        setCards((currentCards) =>
-          currentCards.map((c) =>
-            c._id === updatedCard._id ? updatedCard : c,
-          ),
-        );
-      })
-      .catch(console.error);
-  }
+export default function Main(props: MainProps) {
+  const { currentUser } = useContext(CurrentUserContext);
 
   const newCardPopup: PopupConfig = {
     title: "Nuevo lugar",
-    children: <NewCard onSubmit={handleAddCard} />,
+    children: <NewCard />,
   };
 
   const editAvatarPopup: PopupConfig = {
     title: "Cambiar foto de perfil",
-    children: <EditAvatar onSubmit={handleUpdateAvatar} />,
+    children: <EditAvatar />,
   };
 
-  function getEditProfilePopup(currentUser: UserData): PopupConfig {
-    return {
-      title: "Editar perfil",
-      children: (
-        <EditProfile
-          name={currentUser.name}
-          about={currentUser.about}
-          onSubmit={handleUpdateUser}
-        />
-      ),
-    };
-  }
+  const editProfilePopup: PopupConfig = {
+    title: "Editar perfil",
+    children: <EditProfile />,
+  };
 
   function getImagePopup(card: CardData): PopupConfig {
     return {
@@ -124,62 +47,66 @@ export default function Main() {
     return {
       title: "¿Estás seguro?",
       variant: "confirm",
-      children: <RemoveCard onConfirm={() => handleDeleteCard(card)} />,
+      children: <RemoveCard onConfirm={() => props.handleCardDelete(card)} />,
     };
   }
 
   return (
     <main className="content">
-      {user && (
+      {currentUser && (
         <section className="profile page__section">
           <div className="profile__avatar-wrapper">
-            <img className="profile__image" src={user.avatar} alt="Avatar" />
+            <img
+              className="profile__image"
+              src={currentUser.avatar}
+              alt="Avatar"
+            />
             <button
               aria-label="Cambiar foto de perfil"
               className="profile__avatar-edit-button"
               type="button"
-              onClick={() => handleOpenPopup(editAvatarPopup)}
+              onClick={() => props.handleOpenPopup(editAvatarPopup)}
             />
           </div>
           <div className="profile__info">
-            <h1 className="profile__title">{user.name}</h1>
+            <h1 className="profile__title">{currentUser.name}</h1>
             <button
               aria-label="Editar perfil"
               className="profile__edit-button"
               type="button"
-              onClick={() => handleOpenPopup(getEditProfilePopup(user))}
+              onClick={() => props.handleOpenPopup(editProfilePopup)}
             />
-            <p className="profile__description">{user.about}</p>
+            <p className="profile__description">{currentUser.about}</p>
           </div>
           <button
             aria-label="Agregar tarjeta"
             className="profile__add-button"
             type="button"
-            onClick={() => handleOpenPopup(newCardPopup)}
+            onClick={() => props.handleOpenPopup(newCardPopup)}
           />
         </section>
       )}
       <section className="cards page__section">
         <ul className="cards__list">
-          {cards.map((card) => (
+          {props.cards.map((card) => (
             <Card
               key={card._id}
               card={card}
-              onLike={handleCardLike}
-              onDelete={(c) => handleOpenPopup(getRemoveCardPopup(c))}
-              onImageClick={(c) => handleOpenPopup(getImagePopup(c))}
+              onLike={props.handleCardLike}
+              onDelete={(c) => props.handleOpenPopup(getRemoveCardPopup(c))}
+              onImageClick={(c) => props.handleOpenPopup(getImagePopup(c))}
             />
           ))}
         </ul>
       </section>
-      {popup && (
+      {props.popup && (
         <Popup
-          onClose={handleClosePopup}
-          title={popup.title}
-          variant={popup.variant}
-          isOpen={popup !== null}
+          onClose={props.handleClosePopup}
+          title={props.popup.title}
+          variant={props.popup.variant}
+          isOpen={true}
         >
-          {popup.children}
+          {props.popup.children}
         </Popup>
       )}
     </main>

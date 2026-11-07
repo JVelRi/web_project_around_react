@@ -1,20 +1,22 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
+import { useContext, useState } from "react";
+import CurrentUserContext from "../../../../contexts/CurrentUserContext";
+import useFormValidation from "../../../../hooks/useFormValidation";
 
-type EditProfileProps = {
-  name: string;
-  about: string;
-  onSubmit: (name: string, about: string) => void;
-};
+export default function EditProfile() {
+  const { currentUser, handleUpdateUser } = useContext(CurrentUserContext);
 
-export default function EditProfile(props: EditProfileProps) {
-  const [name, setName] = useState(props.name);
-  const [about, setAbout] = useState(props.about);
+  const [name, setName] = useState(currentUser?.name || "");
+  const [description, setDescription] = useState(currentUser?.about || "");
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>): void {
+  const { errors, isValid, handleChange, validateForm } = useFormValidation();
+
+  function handleSubmit(e: React.SubmitEvent<HTMLFormElement>): void {
     e.preventDefault();
-    props.onSubmit(name, about);
+
+    if (!validateForm(e.currentTarget)) return;
+    handleUpdateUser(name, description);
   }
+  if (!currentUser) return null;
 
   return (
     <form className="popup__form" noValidate onSubmit={handleSubmit}>
@@ -27,9 +29,18 @@ export default function EditProfile(props: EditProfileProps) {
         required
         type="text"
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => {
+          setName(e.target.value);
+          handleChange(e);
+        }}
       />
-      <span className="popup__input-error"></span>
+      <span
+        className={`popup__input-error ${
+          errors.name ? "popup__input-error_active" : ""
+        }`}
+      >
+        {errors.name}
+      </span>
       <input
         className="popup__input popup__input_type_description"
         name="description"
@@ -38,11 +49,24 @@ export default function EditProfile(props: EditProfileProps) {
         maxLength={200}
         required
         type="text"
-        value={about}
-        onChange={(e) => setAbout(e.target.value)}
+        value={description}
+        onChange={(e) => {
+          setDescription(e.target.value);
+          handleChange(e);
+        }}
       />
-      <span className="popup__input-error"></span>
-      <button className="button popup__button" type="submit">
+      <span
+        className={`popup__input-error ${
+          errors.description ? "popup__input-error_active" : ""
+        }`}
+      >
+        {errors.description}
+      </span>
+      <button
+        className="button popup__button"
+        type="submit"
+        disabled={!isValid}
+      >
         Guardar
       </button>
     </form>

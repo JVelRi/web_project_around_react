@@ -1,58 +1,77 @@
 import { API_URL, API_TOKEN } from "./constants";
-import type { UserData, CardData } from "../types/types";
+import type { UserData, CardData, CardFormData } from "../types/types";
 
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const res = await fetch(`${API_URL}${endpoint}`, {
-    headers: {
-      authorization: API_TOKEN,
-      "Content-Type": "application/json",
-    },
-    ...options,
-  });
-  if (!res.ok) {
-    throw new Error(`Error ${res.status}`);
+class Api {
+  private baseUrl: string;
+  private token: string;
+
+  constructor(baseUrl: string, token: string) {
+    this.baseUrl = baseUrl;
+    this.token = token;
   }
-  return res.json();
+
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+  ): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        authorization: this.token,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error ${res.status}`);
+    }
+
+    return res.json();
+  }
+
+  getUserInfo() {
+    return this.request<UserData>("/users/me");
+  }
+
+  getCardInfo() {
+    return this.request<CardData[]>("/cards");
+  }
+
+  updateUserInfo(name: string, about: string) {
+    return this.request<UserData>("/users/me", {
+      method: "PATCH",
+      body: JSON.stringify({ name, about }),
+    });
+  }
+
+  updateUserAvatar(avatar: string) {
+    return this.request<UserData>("/users/me/avatar", {
+      method: "PATCH",
+      body: JSON.stringify({ avatar }),
+    });
+  }
+
+  addCard(data: CardFormData) {
+    return this.request<CardData>("/cards", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  deleteCard(cardId: string) {
+    return this.request<unknown>(`/cards/${cardId}`, {
+      method: "DELETE",
+    });
+  }
+
+  changeLikeStatus(cardId: string, isLiked: boolean) {
+    return this.request<CardData>(`/cards/${cardId}/likes`, {
+      method: isLiked ? "DELETE" : "PUT",
+    });
+  }
 }
 
-export function getUserInfo() {
-  return request<UserData>("/users/me");
-}
+const api = new Api(API_URL, API_TOKEN);
 
-export function getCardInfo() {
-  return request<CardData[]>("/cards");
-}
-
-export function updateUserInfo(name: string, about: string) {
-  return request<UserData>("/users/me", {
-    method: "PATCH",
-    body: JSON.stringify({ name, about }),
-  });
-}
-
-export function updateUserAvatar(avatar: string) {
-  return request<UserData>("/users/me/avatar", {
-    method: "PATCH",
-    body: JSON.stringify({ avatar }),
-  });
-}
-
-export function addCard(name: string, link: string) {
-  return request<CardData>("/cards", {
-    method: "POST",
-    body: JSON.stringify({ name, link }),
-  });
-}
-
-export function deleteCard(cardId: string) {
-  return request<unknown>(`/cards/${cardId}`, { method: "DELETE" });
-}
-
-export function changeLikeStatus(cardId: string, isLiked: boolean) {
-  return request<CardData>(`/cards/${cardId}/likes`, {
-    method: isLiked ? "DELETE" : "PUT",
-  });
-}
+export default api;
